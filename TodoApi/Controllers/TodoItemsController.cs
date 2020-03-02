@@ -45,29 +45,38 @@ namespace TodoApi.Controllers
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTodoItem(long id, TodoItemDTO todoItemDTO)
+        public async Task<IActionResult> PutTodoItem(long id, TodoItem todoItem_fromApiCall)
         {
-            if (id != todoItemDTO.Id)
-            {
-                return BadRequest();
-            }
 
-            var todoItem = await _context.TodoItems.FindAsync(id);
-            if (todoItem == null)
+            var todoItem_fromDatabase = await _context.TodoItems.FindAsync(id);
+            if (todoItem_fromDatabase == null)
             {
                 return NotFound();
             }
 
-            todoItem.Name = todoItemDTO.Name;
-            todoItem.IsComplete = todoItemDTO.IsComplete;
+            if (null != todoItem_fromApiCall.IsComplete)
+                todoItem_fromDatabase.IsComplete = todoItem_fromApiCall.IsComplete;
+            if (null != todoItem_fromApiCall.Name)
+                todoItem_fromDatabase.Name = todoItem_fromApiCall.Name;
+
+
+
+            _context.Entry(todoItem_fromDatabase).State = EntityState.Modified;
 
             try
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException) when (!TodoItemExists(id))
+            catch (DbUpdateConcurrencyException)
             {
-                return NotFound();
+                if (!TodoItemExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
             }
 
             return NoContent();
